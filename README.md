@@ -6,11 +6,13 @@
 
 2) bigramová matice - vytvoření, uložení, normalizace
 
-
+3) encrypt a decrypt funkce
 
 funkce
   - **get_bigrams(text)**
   - **transition_matrix(bigrams)**
+  - **substitute_encrypt(plaintext, key)**
+  - **substitute_decrypt(ciphertext, key)**
 
 
 ## TO DO:
@@ -20,8 +22,7 @@ funkce
 funkce
   - prolom_substitute(text, TM_ref, iter, start_key)
   - plausibility(text, TM_ref)
-  - substitute_encrypt(plaintext, key)
-  - substitute_decrypt(ciphertext, key)
+
 
 
 
