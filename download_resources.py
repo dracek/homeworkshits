@@ -65,14 +65,21 @@ def uloz_text(roman_number, text):
     print(f"Uloženo: {nazev_souboru}")
 
 
-# Stažení a zpracování všech kapitol
-for cislo in range(1, POSLEDNI_KAPITOLA + 1):
-    roman_number = roman.toRoman(cislo)
-    text = stahni_text(roman_number)
+def uloz_text_main():
+    # Stažení a zpracování všech kapitol
+    for cislo in range(1, POSLEDNI_KAPITOLA + 1):
+        roman_number = roman.toRoman(cislo)
+        text = stahni_text(roman_number)
 
-    if text:
-        text = transformuj_text(text)
-        uloz_text(roman_number, text)
+        if text:
+            text = transformuj_text(text)
+            uloz_text(roman_number, text)
+    # Výpis celkového počtu znaků
+    print(f"\nCelkový počet znaků ve všech kapitolách: {CELKOVY_POCET_ZNAKU}")
 
-# Výpis celkového počtu znaků
-print(f"\nCelkový počet znaků ve všech kapitolách: {CELKOVY_POCET_ZNAKU}")
+
+
+if __name__ == "__main__":
+    print("Sosám text z wikisource...")
+    uloz_text_main()
+
