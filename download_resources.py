@@ -17,7 +17,7 @@ OUTPUT_DIR = os.path.join("resources", "book")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
-def stahni_text(roman_number):
+def download_text(roman_number):
     """Stáhne text z dané kapitoly"""
     url = f"https://cs.wikisource.org/wiki/Krakatit/{roman_number}."
     response = requests.get(url)
@@ -36,7 +36,7 @@ def stahni_text(roman_number):
         return None
 
 
-def transformuj_text(text):
+def transform_text(text):
     """Transformuje text: odstraní diakritiku, nahradí nepísmenné znaky podtržítkem, odstraní duplicitní podtržítka a vrátí uppercase."""
 
     # Odstranění diakritiky
@@ -44,13 +44,13 @@ def transformuj_text(text):
         c for c in unicodedata.normalize('NFKD', text) if not unicodedata.combining(c)
     )
 
-    text = re.sub(r'[^\w]', '_', text)  # Nahradí cokoliv, co není písmeno nebo číslo, podtržítkem
-    text = re.sub(r'_+', '_', text)     # Odstraní opakující se podtržítka
+    text = re.sub(r'[^A-Za-z]', '_', text)  # Nahradí vše kromě písmen podtržítkem
+    text = re.sub(r'_+', '_', text)         # Odstraní opakující se podtržítka
 
     return text.upper()
 
 
-def uloz_text(roman_number, text):
+def save_text(roman_number, text):
     """Uloží text do souboru v podsložce"""
 
     global CELKOVY_POCET_ZNAKU
@@ -65,15 +65,15 @@ def uloz_text(roman_number, text):
     print(f"Uloženo: {nazev_souboru}")
 
 
-def uloz_text_main():
+def save_text_main():
     # Stažení a zpracování všech kapitol
     for cislo in range(1, POSLEDNI_KAPITOLA + 1):
         roman_number = roman.toRoman(cislo)
-        text = stahni_text(roman_number)
+        text = download_text(roman_number)
 
         if text:
-            text = transformuj_text(text)
-            uloz_text(roman_number, text)
+            text = transform_text(text)
+            save_text(roman_number, text)
     # Výpis celkového počtu znaků
     print(f"\nCelkový počet znaků ve všech kapitolách: {CELKOVY_POCET_ZNAKU}")
 
@@ -81,5 +81,5 @@ def uloz_text_main():
 
 if __name__ == "__main__":
     print("Sosám text z wikisource...")
-    uloz_text_main()
+    save_text_main()
 
