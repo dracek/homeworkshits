@@ -4,7 +4,7 @@ import numpy as np
 alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_"
 
 SOURCE_DIR = os.path.join("resources", "book")
-MATRIX_DIR = os.path.join("resources", "bigram_matice.csv")
+MATRIX_PATH = os.path.join("resources", "bigram_matice.csv")
 
 def get_bigrams(text):
     """Vytvoří seznam bigramů z textu."""
@@ -39,7 +39,7 @@ def transition_matrix(bigrams):
             raise Exception(f"Invalid bigram '{bigram}'")
 
     # Nahrazení nul hodnotou 1
-    TM[TM == 0] = 1
+    #TM[TM == 0] = 1
 
     return TM
 
@@ -82,10 +82,10 @@ if __name__ == "__main__":
     matice = create_matrix_from_folder(SOURCE_DIR)
 
     # Uložení do souboru
-    save_matrix(matice, MATRIX_DIR)
+    save_matrix(matice, MATRIX_PATH)
 
     # Načtení a ověření
-    nactena_matice = load_matrix(MATRIX_DIR)
+    nactena_matice = load_matrix(MATRIX_PATH)
 
     print("")
     print("uložená matice:")
