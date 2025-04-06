@@ -1,25 +1,14 @@
 import requests
 from bs4 import BeautifulSoup
-import roman
 import os
 import unicodedata
 import re
 
-# Konstanta pro poslední kapitolu
-POSLEDNI_KAPITOLA = 54
-
-CELKOVY_POCET_ZNAKU = 0
-
-# Složka pro uložení souborů
-OUTPUT_DIR = os.path.join("resources", "book")
-
-# Zajistí, že složka existuje
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+from config import DOWNLOAD_DIR
 
 
-def download_text(roman_number):
-    """Stáhne text z dané kapitoly"""
-    url = f"https://cs.wikisource.org/wiki/Krakatit/{roman_number}."
+def download_text(url):
+    """Stáhne text z daného wikisource zdroje"""
     response = requests.get(url)
 
     if response.status_code != 200:
@@ -50,36 +39,79 @@ def transform_text(text):
     return text.upper()
 
 
-def save_text(roman_number, text):
+def save_text(name, text):
     """Uloží text do souboru v podsložce"""
 
-    global CELKOVY_POCET_ZNAKU
-
-    nazev_souboru = os.path.join(OUTPUT_DIR, f"Krakatit_{roman_number}.txt")
+    nazev_souboru = os.path.join(DOWNLOAD_DIR, f"{name}.txt")
 
     with open(nazev_souboru, "w", encoding="utf-8") as file:
         file.write(text)
 
-    CELKOVY_POCET_ZNAKU += len(text)
-
     print(f"Uloženo: {nazev_souboru}")
 
 
-def save_text_main():
+def extract_links_from_url(url, prefix=""):
+    """Stáhne HTML ze zadané URL a extrahuje odkazy z <li> elementů uvnitř <div id='mw-content-text'>.
+    Funguje pro <ol> i <ul>, ignoruje <ol> s class='references'. Mezery a tečky v textu odkazu jsou odstraněny."""
+
+    base_url = "https://cs.wikisource.org"
+
+    response = requests.get(base_url + url)
+    if response.status_code != 200:
+        return []
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    # Najdeme hlavní obsahový div
+    content_div = soup.find("div", id="mw-content-text")
+    if not content_div:
+        return []
+
+    links = []
+
+    # Projdeme všechny <ol> a <ul> uvnitř divu
+    for lst in content_div.find_all(["ol", "ul"]):
+        if lst.name == "ol" and "references" in lst.get("class", []):
+            continue  # Přeskočíme tento seznam
+
+        # Projdeme <li> uvnitř seznamu
+        for li in lst.find_all("li"):
+            a_tag = li.find("a", href=True)
+            if a_tag:
+                text = "".join(a_tag.stripped_strings).replace(" ", "_").replace(".", "")
+                links.append((prefix + text, base_url + a_tag["href"]))
+
+    return links
+
+
+def main():
+
+    url_list = []
+    celkovy_pocet_znaku = 0
+
+    url_list.extend(extract_links_from_url("/wiki/Krakatit", "Krakatit_"))
+    url_list.extend(extract_links_from_url("/wiki/Jak_se_co_d%C4%9Bl%C3%A1"))
+
+    # Zajistí, že cílová složka existuje
+    os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
     # Stažení a zpracování všech kapitol
-    for cislo in range(1, POSLEDNI_KAPITOLA + 1):
-        roman_number = roman.toRoman(cislo)
-        text = download_text(roman_number)
+    for name, url in url_list:
+        text = download_text(url)
 
         if text:
             text = transform_text(text)
-            save_text(roman_number, text)
-    # Výpis celkového počtu znaků
-    print(f"\nCelkový počet znaků ve všech kapitolách: {CELKOVY_POCET_ZNAKU}")
+            save_text(name, text)
 
+            celkovy_pocet_znaku += len(text)
+        else:
+            print(f"Problém se zdrojem {name}!")
+
+    print(f"Nasosáno a uloženo {celkovy_pocet_znaku} znaků.")
 
 
 if __name__ == "__main__":
-    print("Sosám text z wikisource...")
-    save_text_main()
+    print("Sosám texty z wikisource...")
+    main()
+
 
