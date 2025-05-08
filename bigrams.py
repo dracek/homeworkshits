@@ -1,13 +1,22 @@
 import os
 import numpy as np
 
-alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ_"
+from config import alphabet, DOWNLOAD_DIR, MATRIX_PATH
 
-SOURCE_DIR = os.path.join("resources", "book")
-MATRIX_PATH = os.path.join("resources", "bigram_matice.csv")
 
 def get_bigrams(text):
-    """Vytvoří seznam bigramů z textu."""
+    """
+    Vytvoří seznam bigramů (dvojic po sobě jdoucích znaků) z daného textu.
+
+    Args:
+        text (str): Vstupní text, ze kterého se budou tvořit bigramy. Očekává se
+                    neprázdný řetězec. Délka by měla být alespoň 2 znaky,
+                    jinak bude výstup prázdný seznam.
+
+    Returns:
+        list[str]: Seznam řetězců, kde každý prvek představuje jeden bigram
+                   získaný z po sobě jdoucích znaků vstupního textu.
+    """
     bigrams_list = []
     n = len(text)
 
@@ -19,8 +28,18 @@ def get_bigrams(text):
 
 
 def transition_matrix(bigrams):
-    """Vytvoří bigramovou matici přechodů pro danou abecedu, nulové výskyty nahradí jedničkou"""
-    global alphabet
+    """
+    Vytvoří bigramovou matici přechodů pro danou abecedu, kde každý prvek matice udává počet výskytů
+    příslušného bigramu. Nulové výskyty jsou nahrazeny jedničkou kvůli pozdějšímu logaritmování hodnot.
+
+    Args:
+        bigrams (list[str]): Seznam bigramů (dvojic znaků).
+
+    Returns:
+        numpy.ndarray: Čtvercová matice velikosti n x n (kde n je délka abecedy), obsahující
+                       četnosti přechodů mezi znaky. Pokud se určitý bigram nevyskytuje,
+                       příslušná hodnota je nastavena na 1."""
+
     n = len(alphabet)
 
     # Inicializace matice n x n s nulami
@@ -36,20 +55,31 @@ def transition_matrix(bigrams):
             i, j = char_to_index[c1], char_to_index[c2]
             TM[i, j] += 1
         else:
-            raise Exception(f"Invalid bigram '{bigram}'")
+            raise ValueError(f"Invalid bigram '{bigram}'")
 
     # Nahrazení nul hodnotou 1
-    #TM[TM == 0] = 1
+    TM[TM == 0] = 1
 
     return TM
 
 
-def create_matrix_from_folder(slozka):
-    """Načte texty, vytvoří bigramy a uloží bigramovou matici."""
+def create_matrix_from_folder(folder_path):
+    """
+    Načte textové soubory ze složky, vytvoří bigramy ze všech souborů dohromady a na
+    jejich základě sestaví bigramovou přechodovou matici. Předpokládá validní vstupní data.
+
+    Args:
+        folder_path (str): Cesta ke složce, která obsahuje textové soubory
+                           určené ke zpracování.
+
+    Returns:
+        numpy.ndarray: Matice přechodů vytvořená z bigramů napříč všemi soubory ve složce.
+    """
+
     all_bigrams = []
 
-    for filename in os.listdir(slozka):
-        file_path = os.path.join(slozka, filename)
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
 
         with open(file_path, "r", encoding="utf-8") as f:
             text = f.read()
@@ -60,29 +90,59 @@ def create_matrix_from_folder(slozka):
     return transition_matrix(all_bigrams)
 
 
-def normalize_matrix(matice):
-    """Normalizuje matici"""
-    # Normalizace - vydělíme součtem celé matice
-    return matice / np.sum(matice)
+def normalize_matrix(matrix):
+    """
+    Normalizuje číselnou matici tak, aby součet všech jejích prvků byl roven 1.
+    Předpokládá, že součet matice není roven 0.
+
+    Args:
+        matrix (numpy.ndarray): Vstupní matice přechodů.
+
+    Returns:
+        numpy.ndarray: Normalizovaná matice, ve které každý prvek představuje relativní četnost
+                       vůči celkovému součtu všech prvků v původní matici.
+    """
+
+    return matrix / np.sum(matrix)
 
 
-def save_matrix(matice, soubor):
-    """Uloží bigramovou matici do CSV souboru"""
-    np.savetxt(soubor, matice, delimiter=",", fmt="%d")
+def save_matrix(matrix, file_path):
+    """
+    Uloží bigramovou matici do CSV souboru ve formátu celých čísel.
+
+    Args:
+        matrix (numpy.ndarray): Matice, která bude uložena do souboru.
+        file_path (str): Cesta k výstupnímu CSV souboru, do kterého se matice zapíše.
+
+    Returns:
+        None
+    """
+
+    np.savetxt(file_path, matrix, delimiter=",", fmt="%d")
 
 
-def load_matrix(soubor):
-    """Načte bigramovou matici z CSV souboru"""
-    return np.loadtxt(soubor, delimiter=",", dtype=int)
+def load_matrix(file_path):
+    """
+    Načte bigramovou (nebo jinou číselnou) matici z CSV souboru.
+
+    Args:
+        file_path (str): Cesta k CSV souboru, ze kterého se matice načte.
+
+    Returns:
+        numpy.ndarray: Načtená matice jako pole typu int.
+    """
+
+    return np.loadtxt(file_path, delimiter=",", dtype=int)
+
 
 if __name__ == "__main__":
-    print("Vytvářím matici...")
+    print("Vytvářím a ukládám matici...")
 
     # Vytvoření matice
-    matice = create_matrix_from_folder(SOURCE_DIR)
+    # matice = create_matrix_from_folder(DOWNLOAD_DIR)
 
     # Uložení do souboru
-    save_matrix(matice, MATRIX_PATH)
+    #save_matrix(matice, MATRIX_PATH)
 
     # Načtení a ověření
     nactena_matice = load_matrix(MATRIX_PATH)
