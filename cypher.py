@@ -3,21 +3,28 @@ import numpy as np
 import random
 
 from config import alphabet
-from bigrams import get_bigrams, transition_matrix, normalize_matrix, load_matrix
-
-
+from bigrams import get_bigrams, transition_matrix, normalize_matrix, load_matrix, transition_matrix_raw
 
 
 def substitute_encrypt(plaintext, key):
     """
-    Provede substituční šifrování daného textu pomocí klíče.
+    Provede substituční šifrování vstupního textu na základě zadaného klíče.
 
-    :param plaintext: Text k zašifrování
-    :param key: Odpovídající znaky v šifrovací abecedě
-    :return: Zašifrovaný text
+    Args:
+        plaintext (str): Vstupní text, který má být zašifrován. Očekává se, že obsahuje pouze znaky z dané abecedy.
+        key (str): Řetězec substitučního klíče. Měl by být permutací znaků abecedy.
+
+    Returns:
+        str: Text k zašifrování, kde každý znak z abecedy bude nahrazen odpovídajícím znakem z klíče.
     """
+
     # Vytvoření mapování znaků
     mapping = {alphabet[i]: key[i] for i in range(len(alphabet))}
+
+    # Chyba při použití nepodporovaných znaků
+    invalid_chars = set(plaintext) - set(alphabet)
+    if invalid_chars:
+        raise ValueError(f"Text obsahuje nepovolené znaky: {invalid_chars}")
 
     # Šifrování textu
     encrypted_text = ''.join(mapping[char] if char in mapping else char for char in plaintext)
@@ -27,14 +34,23 @@ def substitute_encrypt(plaintext, key):
 
 def substitute_decrypt(ciphertext, key):
     """
-    Provede dešifrování substituční šifry pomocí klíče.
+    Provede dešifrování substituční šifry na základě zadaného klíče.
 
-    :param ciphertext: Zašifrovaný text
-    :param key: Odpovídající znaky v šifrovací abecedě
-    :return: Dešifrovaný text
+    Args:
+        ciphertext (str): Zašifrovaný text, který má být dešifrován. Očekává se, že obsahuje pouze znaky z klíče.
+        key (str): Řetězec představující substituční klíč, tedy permutaci znaků abecedy, která byla použita při šifrování.
+
+    Returns:
+        str: Dešifrovaný text, ve kterém jsou znaky z klíče nahrazeny odpovídajícími znaky z původní abecedy.
+
     """
     # Vytvoření inverzního mapování znaků
     reverse_mapping = {key[i]: alphabet[i] for i in range(len(alphabet))}
+
+    # Chyba při použití nepodporovaných znaků
+    invalid_chars = set(ciphertext) - set(key)
+    if invalid_chars:
+        raise ValueError(f"Text obsahuje znaky, které nelze dešifrovat: {invalid_chars}")
 
     # Dešifrování textu
     decrypted_text = ''.join(reverse_mapping[char] if char in reverse_mapping else char for char in ciphertext)
@@ -51,11 +67,11 @@ def plausibility(text, TM_ref):
     :return: Pravděpodobnostní skóre textu
     """
     bigrams_obs = get_bigrams(text)  # Získání bigramů z textu
-    TM_obs = transition_matrix(bigrams_obs)  # Vytvoření matice bigramů
+    TM_obs = transition_matrix_raw(bigrams_obs)  # Vytvoření matice bigramů
 
 
     # hmm? todo
-    TM_ref[TM_ref == 0] = 1
+    #TM_ref[TM_ref == 0] = 1
 
     likelihood = 0
     n = len(alphabet)
@@ -71,7 +87,7 @@ def plausibility(text, TM_ref):
 def plausibility2(text, TM_ref):
     """Vyhodnocuje pravděpodobnost textu pomocí bigramové matice."""
     bigrams_obs = get_bigrams(text)
-    TM_obs = transition_matrix(bigrams_obs)
+    TM_obs = transition_matrix_raw(bigrams_obs)
     return np.sum(np.log(TM_ref) * TM_obs)
 
 
@@ -99,7 +115,8 @@ def prolom_substitute(text, TM_ref, iterations, start_key):
 
         q = p_candidate / p_current if p_current != 0 else 0
 
-        if q > 1 or random.uniform(0, 1) < 0.01:
+        if q < 1 or random.uniform(0, 1) < 0.01:
+            print("switch")
             current_key = candidate_key
             p_current = p_candidate
 
@@ -172,14 +189,6 @@ if __name__ == "__main__":
     print(likelihood)
 
 
-    xtext = "XXXX_XXXXXX_XXX"
-    #MATRIX_PATH = os.path.join("resources", "bigram_matice.csv")
-
-    #TM_ref = normalize_matrix(load_matrix(MATRIX_PATH))
-
-    likelihood = plausibility(xtext, TM_ref)
-    print(likelihood)
-
 
     print("")
     print("Prolom:")
@@ -189,5 +198,6 @@ if __name__ == "__main__":
 
     prolamovaci_text = "ABM_DEAOMARDHMAVA_VNAERDALD_UAOMAZDNYPAA_VZHBDSVANDAYVWAWIOPABCKVBMARDLMABSDBMAYDOPAXDAWMRDZACYVSANDAYUNDACMWPBSVAHSVBMIAYDOPAXDAWMRDZAMYDBKDSAOBUKWVABPNWMZUSA_ABM_IAVACMNYVBUSANDACKDOAWMSVAXDOAKDWSAZHKVCYUBDACMXDODNACKDNDAERDAIXDSVANABM_DEAOBVAWKMWPA_CDYACMXOAEINUEDAOVSAOMBD_IAYDAVNCMRALSU_AWAHKVRUZUEAWVEAZHZDNA_CVYWPANWKUCDSA_ILPA_CVYWPANAYDLMIANDAERMIARDRUAVRUAOMCKDOIAVRUA_CVYWPAZMCVWAEUARDKM_IEUNAEINUEAYMAIODSVYAVLPNABUODSAVLPALPSMAXUNYMA_DAXNDEAYDAEDSVAKVOVAEPNSUNA_DALPZHAEMHSVAXDNYDAXDORMIANSPNDYAZMNAEUAKDWSA_CVYWPARDEI_DNALIOALPNAEINDSABPOVYAYMAZMARDZHZDNAVARDNEUNARDLMALPAYDAMOBD_SUAVAXVAANCINYUSVAKIZDAOMAWSURVABUOUNAUARVAYMAXNDEAEPNSDSVA_DALPZHANSVANAYDLMIAOMCKDOIAOMBDOSVALPZHAYMAOMBDOSVALPZHAYMAXUNYDAVSDAAYPAXNUAYVEARDWODA_VNRMILDRAXOUAWARUAHSDOARUWOPAEDARDRVCVOSMACYVYANDAYDARVAYMAWOP_AXDAZSMBDWACKURZD_RVAEPNSUANUA_DAXDARVANBDYDANVEAEVNAXUAKVOACMHSDOSARVARUAIYKP_RDRPEVAMZUEVACKDZDAXDRARDOMBDOSA_VCKUYAAYVWABUOUNABPODZHSVAYPARDIEUNAVRUASHVYAYPAEUSPAVSDACMZHMCAWOP_AXNDEANUAYMACVW"
 
+    #print(prolom_substitute(prolamovaci_text, TM_ref, iterations, start_key))
     print(prolom_substitutex(prolamovaci_text, TM_ref, iterations))
 

@@ -27,18 +27,17 @@ def get_bigrams(text):
     return bigrams_list
 
 
-def transition_matrix(bigrams):
+def transition_matrix_raw(bigrams):
     """
     Vytvoří bigramovou matici přechodů pro danou abecedu, kde každý prvek matice udává počet výskytů
-    příslušného bigramu. Nulové výskyty jsou nahrazeny jedničkou kvůli pozdějšímu logaritmování hodnot.
+    příslušného bigramu. Zachovává nulové četnosti pro výpočet TM_obs.
 
     Args:
         bigrams (list[str]): Seznam bigramů (dvojic znaků).
 
     Returns:
         numpy.ndarray: Čtvercová matice velikosti n x n (kde n je délka abecedy), obsahující
-                       četnosti přechodů mezi znaky. Pokud se určitý bigram nevyskytuje,
-                       příslušná hodnota je nastavena na 1."""
+                       četnosti přechodů mezi znaky. Nulové četnosti jsou zachovány."""
 
     n = len(alphabet)
 
@@ -56,6 +55,25 @@ def transition_matrix(bigrams):
             TM[i, j] += 1
         else:
             raise ValueError(f"Invalid bigram '{bigram}'")
+
+    return TM
+
+
+def transition_matrix(bigrams):
+    """
+    Vytvoří bigramovou matici přechodů s použitím pomocné funkce transition_matrix_raw(bigrams).
+    Nulové výskyty jsou nahrazeny jedničkou kvůli pozdějšímu logaritmování hodnot.
+
+    Args:
+        bigrams (list[str]): Seznam bigramů (dvojic znaků).
+
+    Returns:
+        numpy.ndarray: Čtvercová matice velikosti n x n (kde n je délka abecedy), obsahující
+                       četnosti přechodů mezi znaky. Pokud se určitý bigram nevyskytuje,
+                       příslušná hodnota je nastavena na 1.
+    """
+
+    TM = transition_matrix_raw(bigrams)
 
     # Nahrazení nul hodnotou 1
     TM[TM == 0] = 1
@@ -136,21 +154,25 @@ def load_matrix(file_path):
 
 
 if __name__ == "__main__":
-    print("Vytvářím a ukládám matici...")
+    """
+    Ukázka funkcí pro práci s maticemi.
+    """
+
+    #print("Vytvářím a ukládám matici...")
 
     # Vytvoření matice
-    # matice = create_matrix_from_folder(DOWNLOAD_DIR)
+    # matrix = create_matrix_from_folder(DOWNLOAD_DIR)
 
     # Uložení do souboru
-    #save_matrix(matice, MATRIX_PATH)
+    #save_matrix(matrix, MATRIX_PATH)
 
     # Načtení a ověření
-    nactena_matice = load_matrix(MATRIX_PATH)
+    loaded_matrix = load_matrix(MATRIX_PATH)
 
     print("")
     print("uložená matice:")
-    print(nactena_matice)
+    print(loaded_matrix)
 
     print("")
     print("Normalizovaná matice:")
-    print(normalize_matrix(nactena_matice))
+    print(normalize_matrix(loaded_matrix))
