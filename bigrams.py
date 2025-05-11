@@ -110,8 +110,8 @@ def create_matrix_from_folder(folder_path):
 
 def normalize_matrix(matrix):
     """
-    Normalizuje číselnou matici tak, aby součet všech jejích prvků byl roven 1.
-    Předpokládá, že součet matice není roven 0.
+    Normalizuje číselnou matici tak, aby součet všech jejích prvků byl roven 1. Nulové výskyty jsou nahrazeny jedničkou
+    kvůli pozdějšímu logaritmování hodnot. Předpokládá, že součet matice není roven 0.
 
     Args:
         matrix (numpy.ndarray): Vstupní matice přechodů.
@@ -120,6 +120,9 @@ def normalize_matrix(matrix):
         numpy.ndarray: Normalizovaná matice, ve které každý prvek představuje relativní četnost
                        vůči celkovému součtu všech prvků v původní matici.
     """
+
+    # Nahrazení nul hodnotou 1
+    matrix[matrix == 0] = 1
 
     return matrix / np.sum(matrix)
 
