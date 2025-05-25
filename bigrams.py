@@ -1,7 +1,7 @@
 import os
 import numpy as np
 
-from config import alphabet, DOWNLOAD_DIR, MATRIX_PATH
+from config import alphabet, MATRIX_PATH
 
 
 def get_bigrams(text):

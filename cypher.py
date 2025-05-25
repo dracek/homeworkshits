@@ -38,7 +38,7 @@ def substitute_decrypt(ciphertext, key):
 
     Args:
         ciphertext (str): Zašifrovaný text, který má být dešifrován. Očekává se, že obsahuje pouze znaky z klíče.
-        key (str): Řetězec substitučního klíče, tj. permutace znaků abecedy, která byla použita při šifrování.
+        key (list): Řetězec substitučního klíče, tj. permutace znaků abecedy, která byla použita při šifrování.
 
     Returns:
         str: Dešifrovaný text, ve kterém jsou znaky z klíče nahrazeny odpovídajícími znaky z původní abecedy.
@@ -60,15 +60,18 @@ def substitute_decrypt(ciphertext, key):
 
 def plausibility(text, TM_ref):
     """
-    Vypočítá pravděpodobnost textu na základě referenční bigramové matice.
+    Vypočítá pravděpodobnostní skóre textu na základě referenční bigramové matice.
 
-    :param text: Vstupní text
-    :param TM_ref: Referenční bigramová matice (normalizovaná)
-    :return: Pravděpodobnostní skóre textu
+    Args:
+        text (str): Vstupní text, jehož jazyková přirozenost se hodnotí.
+        TM_ref (numpy.ndarray): Normalizovaná referenční bigramová matice (pravděpodobnostní přechodová matice).
+
+    Returns:
+        float: Pravděpodobnostní skóre textu. Vyšší hodnota značí vyšší jazykovou pravděpodobnost vůči referenčnímu modelu.
     """
+
     bigrams_obs = get_bigrams(text)  # Získání bigramů z textu
     TM_obs = transition_matrix_raw(bigrams_obs)  # Vytvoření matice bigramů
-
 
     likelihood = 0
     n = len(alphabet)
@@ -83,15 +86,20 @@ def plausibility(text, TM_ref):
 
 def prolom_substitute(text, TM_ref, iterations, start_key = None):
     """
-    Provádí substituční dešifrování pomocí simulovaného žíhání.
+    Provede dešifrování substituční šifry pomocí metody simulovaného žíhání.
 
-    :param text: Šifrovaný text
-    :param TM_ref: Referenční bigramová matice (normalizovaná)
-    :param iterations: Počet iterací algoritmu
-    :param start_key: Počáteční klíč pro substituci
-    :return: Nejlepší nalezený dešifrovaný text a odpovídající klíč
+    Args:
+        text (str): Šifrovaný text.
+        TM_ref (numpy.ndarray): Normalizovaná referenční bigramová matice.
+        iterations (int): Počet iterací algoritmu.
+        start_key (list | None): Volitelný počáteční substituční klíč jako seznam znaků. Pokud není zadán, vygeneruje se náhodně.
+
+    Returns:
+        tuple[list[str], str, float]: Trojice obsahující:
+            - nejlepší nalezený klíč (seznam znaků),
+            - odpovídající dešifrovaný text,
+            - jeho logaritmické pravděpodobnostní skóre (plausibility).
     """
-
 
     if start_key is None:
         current_key = list(alphabet)
@@ -116,33 +124,32 @@ def prolom_substitute(text, TM_ref, iterations, start_key = None):
 
         q = p_candidate / p_current if p_current != 0 else 0
 
+        # po normalizaci prvku matice jsou hodnoty 0 až 1, tim padem po jejich logaritmovani je hodnota plausability zaporna
+        # přijímáme když je lepší p_candidate než p_current, tedy q < 1
         if q < 1 or random.uniform(0, 1) < 0.01:
             current_key = candidate_key
             p_current = p_candidate
 
-            if (p_best < p_current):
+            if p_best < p_current:
                 p_best = p_current
                 k_best = current_key
-                print(decrypted_candidate)
 
         if i % 1000 == 0:
-            print(f"Iteration {i}, log plausibility: {p_current}")
+            print(f"Iteration {i}, current plausibility: {p_current}")
 
-        # reset
+        # občasný reset klíče, aby se dlouho nezůstával odchýlený od lepšího řešení
         if i % 1000 == 0:
             p_current = p_best
             current_key = k_best
 
-
-    # vracíme nejlepší řešení, nikoliv poslední, protože s malou pravděpodobností přijímáme i zhoršení
-    best_decrypted_text = substitute_decrypt(text, current_key)
-    return (k_best, best_decrypted_text, p_best)
-
+    # vracíme nejlepší řešení, nikoliv poslední, protože s malou pravděpodobností i zhoršení a poslední řešení nemusí být nejlepsí
+    best_decrypted_text = substitute_decrypt(text, k_best)
+    return k_best, best_decrypted_text, p_best
 
 
 if __name__ == "__main__":
 
-    print("Encrypt:")
+    print("Test encrypt:")
 
     txt1 = "_VOZEM_DO_NEHO_A_ZAS_MNE_BEZI_DO_CESTY__ZACHVELA_SE_TAK_KUDY_VPRAVO_NEBO_VLEVO_TEDY_JE_KONEC_PTAL_SE_TISE_POKYVLA_HLAVOU_TEDY_JE"
     txt2 = "ABM_DEAOMARDHMAVA_VNAERDALD_UAOMAZDNYPAA_VZHBDSVANDAYVWAWIOPABCKVBMARDLMABSDBMAYDOPAXDAWMRDZACYVSANDAYUNDACMWPBSVAHSVBMIAYDOPAXD"
@@ -151,7 +158,7 @@ if __name__ == "__main__":
     print(substitute_encrypt(txt1, key))
 
     print("")
-    print("Decrypt:")
+    print("Test encrypt:")
 
     print(substitute_decrypt(txt2, key))
 
@@ -161,21 +168,22 @@ if __name__ == "__main__":
     TM_ref = normalize_matrix(load_matrix(MATRIX_PATH))
 
     #print("")
-    #print("Likelihood:")
+    #print("Test likelihood:")
 
-    #ptext = "AHOJ_NAZDAR_ATD"
+    #ptext = "AHOJ_NAZDAR_NEJAY_TEST_ATD"
     #likelihood = plausibility(ptext, TM_ref)
     #print(likelihood)
 
     print("")
-    print("Prolom:")
+    print("Test prolom:")
 
     iterations = 20_000
 
     prolamovaci_text = "ABM_DEAOMARDHMAVA_VNAERDALD_UAOMAZDNYPAA_VZHBDSVANDAYVWAWIOPABCKVBMARDLMABSDBMAYDOPAXDAWMRDZACYVSANDAYUNDACMWPBSVAHSVBMIAYDOPAXDAWMRDZAMYDBKDSAOBUKWVABPNWMZUSA_ABM_IAVACMNYVBUSANDACKDOAWMSVAXDOAKDWSAZHKVCYUBDACMXDODNACKDNDAERDAIXDSVANABM_DEAOBVAWKMWPA_CDYACMXOAEINUEDAOVSAOMBD_IAYDAVNCMRALSU_AWAHKVRUZUEAWVEAZHZDNA_CVYWPANWKUCDSA_ILPA_CVYWPANAYDLMIANDAERMIARDRUAVRUAOMCKDOIAVRUA_CVYWPAZMCVWAEUARDKM_IEUNAEINUEAYMAIODSVYAVLPNABUODSAVLPALPSMAXUNYMA_DAXNDEAYDAEDSVAKVOVAEPNSUNA_DALPZHAEMHSVAXDNYDAXDORMIANSPNDYAZMNAEUAKDWSA_CVYWPARDEI_DNALIOALPNAEINDSABPOVYAYMAZMARDZHZDNAVARDNEUNARDLMALPAYDAMOBD_SUAVAXVAANCINYUSVAKIZDAOMAWSURVABUOUNAUARVAYMAXNDEAEPNSDSVA_DALPZHANSVANAYDLMIAOMCKDOIAOMBDOSVALPZHAYMAOMBDOSVALPZHAYMAXUNYDAVSDAAYPAXNUAYVEARDWODA_VNRMILDRAXOUAWARUAHSDOARUWOPAEDARDRVCVOSMACYVYANDAYDARVAYMAWOP_AXDAZSMBDWACKURZD_RVAEPNSUANUA_DAXDARVANBDYDANVEAEVNAXUAKVOACMHSDOSARVARUAIYKP_RDRPEVAMZUEVACKDZDAXDRARDOMBDOSA_VCKUYAAYVWABUOUNABPODZHSVAYPARDIEUNAVRUASHVYAYPAEUSPAVSDACMZHMCAWOP_AXNDEANUAYMACVW"
 
-    start_key = "VLZODTQHUXWSERMCFKNYIBJGA_P"
-    #print(prolom_substitute(prolamovaci_text, TM_ref, iterations, start_key))
+    k_best, best_decrypted_text, p_best = prolom_substitute(prolamovaci_text, TM_ref, iterations)
 
-    print(prolom_substitute(prolamovaci_text, TM_ref, iterations))
+    print("")
+    print("Best text:")
+    print(best_decrypted_text)
 
