@@ -95,7 +95,7 @@ def prolom_substitute(text, TM_ref, iterations, start_key = None):
         start_key (list | None): Volitelný počáteční substituční klíč jako seznam znaků. Pokud není zadán, vygeneruje se náhodně.
 
     Returns:
-        tuple[list[str], str, float]: Trojice obsahující:
+        tuple[str, str, float]: Trojice obsahující:
             - nejlepší nalezený klíč (seznam znaků),
             - odpovídající dešifrovaný text,
             - jeho logaritmické pravděpodobnostní skóre (plausibility).
@@ -144,7 +144,7 @@ def prolom_substitute(text, TM_ref, iterations, start_key = None):
 
     # vracíme nejlepší řešení, nikoliv poslední, protože s malou pravděpodobností i zhoršení a poslední řešení nemusí být nejlepsí
     best_decrypted_text = substitute_decrypt(text, k_best)
-    return k_best, best_decrypted_text, p_best
+    return "".join(k_best), best_decrypted_text, p_best
 
 
 if __name__ == "__main__":

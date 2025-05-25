@@ -1,5 +1,6 @@
 import os
 import re
+import time
 
 from bigrams import load_matrix, normalize_matrix
 from config import MATRIX_PATH
@@ -36,7 +37,7 @@ def get_file_names(path):
 
     for nazev_souboru in os.listdir(path):
         if not pattern.match(nazev_souboru):
-            print(f"Chybný název souboru: {nazev_souboru}")
+            print(f"Chybný název souboru pro dešifrování: {nazev_souboru}")
         else:
             file_names.append(os.path.join(path, nazev_souboru))
 
@@ -50,20 +51,40 @@ if __name__ == "__main__":
 
     file_names = get_file_names(TEST_FILES_PATH)
 
-    file = file_names[0]
+    start = time.time()
+    counter = 0
+
+    for file in file_names:
+
+        print("")
+        print("Prolamuji: " + file)
+        print("")
+
+        with open(file, "r", encoding="utf-8") as f:
+            obsah = f.read()
+
+        k_best, best_decrypted_text, p_best = prolom_substitute(obsah, TM_ref, iterations)
+
+        plaintext_file = file.replace("ciphertext", "plaintext")
+        key_file = file.replace("ciphertext", "key")
+
+        with open(plaintext_file, "w", encoding="utf-8") as f:
+            f.write(best_decrypted_text)
+
+        with open(key_file, "w", encoding="utf-8") as f:
+            f.write(k_best)
+
+        end = time.time()
+        elapsed = end - start
+        minutes = int(elapsed // 60)
+        seconds = elapsed % 60
+        print("")
+        print(f"Čas běhu skriptu: {minutes} min {seconds:.2f} s")
+        counter += 1
+        print(f"Zpracováno souborů: {counter}")
 
     print("")
-    print("Prolamuji: " + file)
+    print("FINISHED!")
     print("")
-
-    with open(file, "r", encoding="utf-8") as f:
-        obsah = f.read()
-
-    k_best, best_decrypted_text, p_best = prolom_substitute(obsah, TM_ref, iterations)
-
-    print("")
-    print("Best text:")
-    print(best_decrypted_text)
-
 
 
